@@ -1,5 +1,6 @@
 import os
 from typing import cast
+from typing import List
 
 import pynvim
 from tree_sitter import Language
@@ -17,15 +18,15 @@ class FindPytest:
     @pynvim.command("YankPytest")
     def yank_pytest(self):
         try:
-            pytest_selector = self.find_pytest()
+            pytest_selector = self.find_pytest([])
             self.nvim.command(f'let @+ = "{pytest_selector}"')
             self.nvim.command(f"echo \"Yanked '{pytest_selector}' to clipboard\"")
         except Exception as e:
             message = f"Failed to yank test name: {str(e)}"
             self.nvim.command(f'echo "{message}"')
 
-    @pynvim.command("FindPytest", sync=True)
-    def find_pytest(self) -> str:
+    @pynvim.function("FindPytest", sync=True)
+    def find_pytest(self, _: List[str]) -> str:
         file_path = cast(str, self.nvim.call("expand", "%@"))
         # we subtract one becuase vim rows are 1-indexed
         # but treesitter rows are 0-indexed
