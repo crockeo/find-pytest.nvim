@@ -40,7 +40,9 @@ def main(args: List[str]) -> None:
 
     tree = parser.parse(contents)
     node = most_specific_node(tree.root_node, row)
-    print(calculate_test_namespace(contents, node))
+
+    namespace = calculate_test_namespace(contents, node)
+    print(f"{path}::{namespace}")
 
 
 def build_py_language() -> Language:
