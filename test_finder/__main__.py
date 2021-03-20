@@ -9,11 +9,11 @@ from tree_sitter import TreeCursor
 from tree_sitter import Node
 
 
-def main(args: List[str]) -> None:
+def main(args: List[str]) -> int:
     args = args[1:]
     if len(args) != 2:
         print_usage("Improper number of arguments")
-        return
+        return 1
 
     path = args[0]
     try:
@@ -21,13 +21,13 @@ def main(args: List[str]) -> None:
             contents = bytes(f.read(), "utf8")
     except FileNotFoundError:
         print_usage("File does not exist")
-        return
+        return 1
 
     try:
         row = int(args[1])
     except ValueError:
         print_usage("Row must be an integer")
-        return
+        return 1
 
     # rows in most editors are 1-indexed,
     # but treesitter is 0 indexed.
@@ -42,11 +42,17 @@ def main(args: List[str]) -> None:
     node = most_specific_node(tree.root_node, row)
 
     namespace = calculate_test_namespace(contents, node)
-    print(f"{path}::{namespace}")
+    if namespace.strip() == "":
+        print(f"No test declaration at {path}:{row + 1}")
+        return 1
+    else:
+        print(f"{path}::{namespace}")
+    return 0
 
 
 def build_py_language() -> Language:
-    python_so = "build/python.so"
+    exec_root = os.path.dirname(__file__)
+    python_so = f"{exec_root}/build/python.so"
     if not os.path.exists(python_so):
         Language.build_library(python_so, ["tree-sitter-python"])
     return Language(python_so, "python")
@@ -54,7 +60,9 @@ def build_py_language() -> Language:
 
 def most_specific_node(node: Node, row: int) -> Node:
     point = (row, 0)
-    assert node.start_point <= point <= node.end_point
+    assert (
+        node.start_point <= point <= node.end_point
+    ), f"row must be within bounds, not {node.start_point} </= {point} </= {node.end_point}"
 
     for child in node.children:
         if child.start_point <= point <= child.end_point:
@@ -82,4 +90,8 @@ def print_usage(error: str = ""):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    try:
+        sys.exit(main(sys.argv))
+    except Exception as e:
+        print(f"Encountered error: {str(e)}")
+        sys.exit(1)
