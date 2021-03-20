@@ -1,6 +1,4 @@
 import os
-import sys
-from typing import List
 
 from tree_sitter import Language
 from tree_sitter import Parser
@@ -9,49 +7,16 @@ from tree_sitter import TreeCursor
 from tree_sitter import Node
 
 
-YELLOW = "\001\033[0;33m\002"
-CLEAR = "\001\033[0m\002"
+def get_test_namespace(file_path: str, row: int) -> str:
+    with open(file_path, "r") as f:
+        contents = bytes(f.read(), "utf8")
 
-
-def main(args: List[str]) -> int:
-    args = args[1:]
-    if len(args) != 2:
-        print_usage("Improper number of arguments")
-        return 1
-
-    path = args[0]
-    try:
-        with open(path, "r") as f:
-            contents = bytes(f.read(), "utf8")
-    except FileNotFoundError:
-        print_usage("File does not exist")
-        return 1
-
-    try:
-        row = int(args[1])
-    except ValueError:
-        print_usage("Row must be an integer")
-        return 1
-
-    # rows in most editors are 1-indexed,
-    # but treesitter is 0 indexed.
-    # so we just subtract 1 :)
-    row -= 1
-
-    language = py_language()
     parser = Parser()
-    parser.set_language(language)
-
-    tree = parser.parse(contents)
-    node = most_specific_node(tree.root_node, row)
+    parser.set_language(py_language())
+    node = most_specific_node(parser.parse(contents).root_node, row)
 
     namespace = calculate_test_namespace(contents, node)
-    if namespace.strip() == "":
-        print(f"{YELLOW}No test declaration at {path}:{row + 1}{CLEAR}")
-        return 1
-    else:
-        print(f"{path}::{namespace}")
-    return 0
+    return f"{file_path}::{namespace}"
 
 
 def py_language() -> Language:
@@ -88,17 +53,3 @@ def calculate_test_namespace(contents: bytes, node: Node) -> str:
             )
         node = node.parent
     return "::".join(reversed(namespaces))
-
-
-def print_usage(error: str = ""):
-    if error:
-        print(error)
-    print("Usage:\n    test-finder <path/to/file> <row>")
-
-
-if __name__ == "__main__":
-    try:
-        sys.exit(main(sys.argv))
-    except Exception as e:
-        print(f"{YELLOW}Encountered {type(e).__name__}:\n{str(e)}{CLEAR}")
-        sys.exit(1)
