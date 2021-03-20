@@ -66,7 +66,9 @@ def calculate_test_namespace(contents: bytes, node: Node) -> str:
     while node.parent is not None:
         if node.type in relevant_types:
             identifier = node.child_by_field_name("name")
-            namespaces.append(contents[identifier.start_byte:identifier.end_byte].decode("utf8"))
+            namespaces.append(
+                contents[identifier.start_byte : identifier.end_byte].decode("utf8")
+            )
         node = node.parent
     return "::".join(reversed(namespaces))
 
@@ -74,10 +76,7 @@ def calculate_test_namespace(contents: bytes, node: Node) -> str:
 def print_usage(error: str = ""):
     if error:
         print(error)
-    print(
-        "Usage:\n"
-        "    test-finder <path/to/file> <row>"
-    )
+    print("Usage:\n    test-finder <path/to/file> <row>")
 
 
 if __name__ == "__main__":
