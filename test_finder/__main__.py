@@ -9,6 +9,10 @@ from tree_sitter import TreeCursor
 from tree_sitter import Node
 
 
+YELLOW = "\001\033[0;33m\002"
+CLEAR = "\001\033[0m\002"
+
+
 def main(args: List[str]) -> int:
     args = args[1:]
     if len(args) != 2:
@@ -34,7 +38,7 @@ def main(args: List[str]) -> int:
     # so we just subtract 1 :)
     row -= 1
 
-    language = build_py_language()
+    language = py_language()
     parser = Parser()
     parser.set_language(language)
 
@@ -43,18 +47,21 @@ def main(args: List[str]) -> int:
 
     namespace = calculate_test_namespace(contents, node)
     if namespace.strip() == "":
-        print(f"No test declaration at {path}:{row + 1}")
+        print(f"{YELLOW}No test declaration at {path}:{row + 1}{CLEAR}")
         return 1
     else:
         print(f"{path}::{namespace}")
     return 0
 
 
-def build_py_language() -> Language:
+def py_language() -> Language:
     exec_root = os.path.dirname(__file__)
     python_so = f"{exec_root}/build/python.so"
     if not os.path.exists(python_so):
-        Language.build_library(python_so, ["tree-sitter-python"])
+        raise FileNotFoundError(
+            "could not find python treesitter grammar.\n"
+            "was this package built properly?"
+        )
     return Language(python_so, "python")
 
 
@@ -93,5 +100,5 @@ if __name__ == "__main__":
     try:
         sys.exit(main(sys.argv))
     except Exception as e:
-        print(f"Encountered error: {str(e)}")
+        print(f"{YELLOW}Encountered {type(e).__name__}:\n{str(e)}{CLEAR}")
         sys.exit(1)
